@@ -1,5 +1,7 @@
 const express = require("express");
+
 const app = express();
+
 const port = 3000;
 
 app.use(express.json());
@@ -33,7 +35,8 @@ app.get("/tasks", (req, res) => {
 
 //Función para obtener una tarea por su ID
 app.get("/tasks/:id", (req,res) => {
-    const task = tasks.find(task => task.id === req.params.id);
+    const { id } = req.params;
+    const task = tasks.find(task => task.id === id);
     const userPermissions = true;
     if (!userPermissions) return res.status(403).json({ msg: "Forbidden" });
     if (!task) return res.status(404).json({ msg: "Task not found" });    
@@ -42,15 +45,15 @@ app.get("/tasks/:id", (req,res) => {
 
 //Función para crear una nueva tarea
 app.post("/tasks", (req, res) => {
-    const { title, description, dueDate } = req.body;
-    if (!title) return res.status(400).json({ msg: "You missed some parameters: title" });
+    const { title, description, status, dueDate, user} = req.body;
+    if (!title || !description || !status || !dueDate || !user) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
     const newTask = {
         id: (tasks.length + 1).toString(),
         title,
         description: description || "",
-        status: "TODO",
+        status: status || null,
         dueDate: dueDate || null,
-        user: null,
+        user: user || null,
         createdAt: new Date(),
         modifiedAt: new Date(),
         deletedAt: null
@@ -60,13 +63,14 @@ app.post("/tasks", (req, res) => {
 });
 
 //Función para actualizar una tarea
-app.put('/tasks/:id', (req, res) => {
+app.put("/tasks/:id", (req, res) => {
+    const { id } = req.params;
     const { title, description, dueDate } = req.body;
-    const task = tasks.find(tasks => tasks.id === req.params.id);
+    const task = tasks.find(tasks => tasks.id === id);
     if (!task) return res.status(404).json({ msg: "Task not found" });
     const userPermissions = true;
     if (!userPermissions) return res.status(403).json({ msg: "Forbidden" });
-    if (!title) return res.status(400).json({ msg: "You missed some parameters: title" });
+    if (!title) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
 
     task.title = title;
     task.description = description || task.description;
@@ -81,7 +85,7 @@ app.patch("/tasks/:id", (req, res) => {
     if (!id) return res.status(400).json({ msg: "You missed parameter 'id'"});
     const userPermissions = true;
     if (!userPermissions) return res.status(403).json({ msg: "Forbidden" });
-    const task = tasks.find(task => task.id === req.params.id);
+    const task = tasks.find(task => task.id === id);
     if (!task) return res.status(404).json({ msg: "Task not found" });
     task.status = "DONE";
     res.status(200).json({ msg: "Task marked as completed" });
@@ -93,7 +97,7 @@ app.delete("/tasks/:id", (req, res) => {
     if (!id) return res.status(400).json({ msg: "You missed parameter 'id'"});
     const userPermissions = true;
     if (!userPermissions) return res.status(403).json({ msg: "Forbidden"});
-    const taskIndex = tasks.findIndex(task => task.id === req.params.id);
+    const taskIndex = tasks.findIndex(task => task.id === id);
     if (taskIndex === -1) return res.status(404).json({ msg: "Task not found" });
     tasks.splice(taskIndex, 1);
     res.status(200).json({ msg: "Task removed successfully" });
@@ -102,9 +106,11 @@ app.delete("/tasks/:id", (req, res) => {
 //Función para obtener la información del usuario
 app.get("/users", (req, res) => {
     res.status(200).json(users.map(user => ({
+        id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        password: user.password
     })));
 });
 
@@ -117,7 +123,7 @@ app.post("/user/login", (req, res) => {
     const user = users.find(user => user.email === email && user.password === password);
     if (!user) {return res.status(404).json({ msg: "User not found" })};
     res.status(200).json({ msg: "Login successful" });
-})
+});
 
 const server = app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
