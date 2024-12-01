@@ -85,9 +85,13 @@ app.patch("/tasks/:id", (req, res) => {
     if (!id) return res.status(400).json({ msg: "You missed parameter 'id'"});
     const userPermissions = true;
     if (!userPermissions) return res.status(403).json({ msg: "Forbidden" });
-    const task = tasks.find(task => task.id === id);
-    if (!task) return res.status(404).json({ msg: "Task not found" });
-    task.status = "DONE";
+    const taskIndex = tasks.findIndex(task => task.id === id);
+    if (taskIndex === -1) return res.status(404).json({ msg: "Task not found" });
+    tasks[taskIndex].status = "DONE";
+    tasks.splice(taskIndex, 1);
+    tasks.forEach((task, index) => {
+        task.id = (index + 1).toString();
+    })
     res.status(200).json({ msg: "Task marked as completed" });
 });
 
@@ -100,6 +104,9 @@ app.delete("/tasks/:id", (req, res) => {
     const taskIndex = tasks.findIndex(task => task.id === id);
     if (taskIndex === -1) return res.status(404).json({ msg: "Task not found" });
     tasks.splice(taskIndex, 1);
+    tasks.forEach((task, index) => {
+        task.id = (index + 1).toString();
+    });
     res.status(200).json({ msg: "Task removed successfully" });
 });
 
