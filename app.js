@@ -51,7 +51,7 @@ app.post("/tasks", (req, res) => {
         id: (tasks.length + 1).toString(),
         title,
         description: description || "",
-        status: status || null,
+        status: status || "TODO",
         dueDate: dueDate || null,
         user: user || null,
         createdAt: new Date(),
@@ -65,16 +65,19 @@ app.post("/tasks", (req, res) => {
 //Función para actualizar una tarea
 app.put("/tasks/:id", (req, res) => {
     const { id } = req.params;
-    const { title, description, dueDate } = req.body;
+    const { title, description, dueDate, status, user } = req.body;
     const task = tasks.find(tasks => tasks.id === id);
     if (!task) return res.status(404).json({ msg: "Task not found" });
     const userPermissions = true;
     if (!userPermissions) return res.status(403).json({ msg: "Forbidden" });
-    if (!title) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
-
+    if (!title || !description || !status || !dueDate || !user) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
+    const allowedStatus = ["TODO", "PENDING", "IN_PROGRESS", "COMPLETED"];
+    if (!allowedStatus.includes(status)) return res.status(400).json({ msg: "status '${status}' is not allowed" });
     task.title = title;
     task.description = description || task.description;
     task.dueDate = dueDate || task.dueDate;
+    task.status = status || task.status;
+    task.user = user || task.user;
     task.modifiedAt = new Date();
     res.status(200).json({ msg: "Task updated" });
 });
@@ -111,24 +114,22 @@ app.delete("/tasks/:id", (req, res) => {
 });
 
 //Función para obtener la información del usuario
-app.get("/users", (req, res) => {
-    res.status(200).json(users.map(user => ({
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+app.get("/user", (req, res) => {
+    const user = users[0]; 
+    res.status(200).json({
+        firstname: user.firstName,
+        lastname: user.lastName,
         email: user.email,
-        password: user.password
-    })));
+    });
 });
 
 //Función para iniciar sesión de un usuario
 app.post("/user/login", (req, res) => {
     const { email, password } = req.body;
-    if (!email || !password)  return res.status(400).json({ msg: "Missing parameters: 'email' or 'password'" });
-    const accesForbidden = false;
-    if (!accesForbidden) return res.status(403).json({msg: "Forbidden"});
-    const user = users.find(user => user.email === email && user.password === password);
-    if (!user) {return res.status(404).json({ msg: "User not found" })};
+    if (!email || !password) return res.status(400).json({ msg: "Missing parameters: 'email' or 'password'" });
+    const user = users.find((u) => u.email === email);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (user.password !== password) return res.status(403).json({ msg: "Forbidden" });
     res.status(200).json({ msg: "Login successful" });
 });
 
