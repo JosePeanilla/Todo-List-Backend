@@ -2,6 +2,11 @@ const express = require("express");
 
 const app = express();
 
+const dotEnv = require("dotenv");
+dotEnv.config();
+
+require("./data/dbConnection");
+
 const port = 3000;
 
 app.use(express.json());
@@ -27,8 +32,8 @@ app.get("/tasks", (req, res) => {
     res.status(200).json(
         incompleteTasks.map(task => ({
             ...task,
-            createdAt: task.createdAt || new Date(),
-            modifiedAt: task.modifiedAt || new Date(),
+            createdAt: task.createdAt || new Date().toISOString(),
+            modifiedAt: task.modifiedAt || new Date().toISOString(),
         }))
     );
 });
@@ -90,11 +95,8 @@ app.patch("/tasks/:id", (req, res) => {
     if (!userPermissions) return res.status(403).json({ msg: "Forbidden" });
     const taskIndex = tasks.findIndex(task => task.id === id);
     if (taskIndex === -1) return res.status(404).json({ msg: "Task not found" });
-    tasks[taskIndex].status = "DONE";
-    tasks.splice(taskIndex, 1);
-    tasks.forEach((task, index) => {
-        task.id = (index + 1).toString();
-    })
+    tasks[taskIndex].status = "COMPLETED";
+    tasks[taskIndex].modifiedAt = new Date();   
     res.status(200).json({ msg: "Task marked as completed" });
 });
 
