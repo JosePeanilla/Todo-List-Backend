@@ -1,6 +1,7 @@
 const express = require("express");
 const { default: mongoose } = require("mongoose");
 const TaskModel = require("./models/task");
+const UserModel = require("./models/user");
 
 const app = express();
 
@@ -17,14 +18,6 @@ mongoose.connect(dbConnectionStringCloud)
 app.get('/', (req, res) => {
     res.send('Bienvenido/a a la APP para gestionar tus tareas!');
 });
-
-//Simulación de una base de datos
-
-
-let user = [
-    { id: "1", firstName: "Sandra", lastName: "Fernández", email: "sandra@example.com", password: "sandra123" },
-    { id: "2", firstName: "Jose", lastName: "Peanilla", email: "jose@example.com", password: "jose123"}
-];
 
 //Función para obtener una lista de tareas incompletas
 app.get("/tasks", async (req, res) => {
@@ -53,7 +46,7 @@ app.get("/tasks/:id", async (req,res) => {
 
 //Función para crear una nueva tarea
 app.post("/task", async (req, res) => {
-    const { title, description, status, dueDate, user} = req.body;
+    const { title, description, status, dueDate, user } = req.body;
     if (!title || !description || !dueDate) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
     const newTask = new TaskModel({
         title,
@@ -72,7 +65,7 @@ app.post("/task", async (req, res) => {
 //Función para actualizar una tarea
 app.put("/tasks/:id", async (req, res) => {
     const { id } = req.params;
-    const {title, description, dueDate, status, user } = req.body;
+    const { title, description, dueDate, status, user } = req.body;
     if (!title || !description || !dueDate || !status) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
     const updatedTask = await TaskModel.findByIdAndUpdate(id, {
         title,
@@ -107,15 +100,33 @@ app.delete("/tasks/:id?", async (req, res) => {
     res.status(200).json({ msg: "Task removed successfully" });
 });
 
+//Función para crear un nuevo usuario
+app.post("/user", async (req, res)  => {
+    const { firstName, lastName, email, password } = req.body;
+    if (!firstName || !lastName || !email || !password) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) return res.status(409).json({ msg: "Email already in use" });
+    const newUser = new UserModel({
+        firstName,
+        lastName,
+        email,
+        password
+    });
+    await newUser.save();
+    res.status(201).json({ msg: "User created", id: newUser.id });
+    });
+
 //Función para obtener la información del usuario
-app.get("/user", (req, res) => {
-    res.status(200).json(user);
+app.get("/user", async (req, res) => {
+    const users = await UserModel.find().lean();
+    res.status(200).json(users);
 });
 
 //Función para iniciar sesión de un usuario
-app.post("/user/login", (req, res) => {
+app.post("/user/login", async (req, res) => {
     const { email, password } = req.body;
-    const user = users.find((u) => u.email === email);
+    if (!email || !password) return res.status(400).json({ msg: "Missing parameters: 'email' or 'password'" });
+    const user = await UserModel.findOne({ email }).lean();
     if (!user) return res.status(404).json({ msg: "User not found" });
     if (user.password !== password) return res.status(403).json({ msg: "Forbidden" });
     res.status(200).json({ msg: "Login successful" });
