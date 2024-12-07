@@ -27,8 +27,8 @@ let user = [
 ];
 
 //Función para obtener una lista de tareas incompletas
-app.get("/tasks", (req, res) => {
-    const incompleteTasks = tasks.filter(task => task.status !== "DONE");
+app.get("/tasks", async (req, res) => {
+    const incompleteTasks = await TaskModel.find({ status: { $ne: "DONE" } }).lean();
     res.status(200).json(
         incompleteTasks.map(task => ({
             ...task,
@@ -39,10 +39,15 @@ app.get("/tasks", (req, res) => {
 });
 
 //Función para obtener una tarea por su ID
-app.get("/tasks/:id", (req,res) => {
+app.get("/tasks/:id", async (req,res) => {
     const { id } = req.params;
-    const task = tasks.find(task => task.id === id);
-    if (!task) return res.status(404).json({ msg: "Task not found" });    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ msg: "Invalid ID format" });
+    }
+    const task = await TaskModel.findById(id).lean();
+    if (!task) {
+        return res.status(404).json({ msg: "Task not found" });
+    }  
     res.status(200).json(task);
 });
 
@@ -65,42 +70,40 @@ app.post("/task", async (req, res) => {
 });
 
 //Función para actualizar una tarea
-app.put("/tasks/:id", (req, res) => {
+app.put("/tasks/:id", async (req, res) => {
     const { id } = req.params;
     const {title, description, dueDate, status, user } = req.body;
-    const task = tasks.find(tasks => tasks.id === id);
-    if (!task) return res.status(404).json({ msg: "Task not found" });
-    if (!id || !title || !description || !dueDate) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
-    task.title = title;
-    task.description = description || task.description;
-    task.dueDate = dueDate || task.dueDate;
-    task.status = status || task.status;
-    task.user = user || task.user;
-    task.modifiedAt = new Date();
+    if (!title || !description || !dueDate || !status) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
+    const updatedTask = await TaskModel.findByIdAndUpdate(id, {
+        title,
+        description,
+        dueDate,
+        status,
+        user,
+        modifiedAt: new Date()
+    }, { new: true });
+    if (!updatedTask) return res.status(404).json({ msg: "Task not found" });
     res.status(200).json({ msg: "Task updated" });
 });
 
 //Función para marcar una tarea como completada
-app.patch("/tasks/:id?", (req, res) => {
+app.patch("/tasks/:id?", async (req, res) => {
     const { id } = req.params;
     if (!id) return res.status(400).json({ msg: "You missed parameter 'id'"});
-    const taskIndex = tasks.findIndex(task => task.id === id);
-    if (taskIndex === -1) return res.status(404).json({ msg: "Task not found" });
-    tasks[taskIndex].status = "DONE";
-    tasks[taskIndex].modifiedAt = new Date();   
+    const updatedTask = await TaskModel.findByIdAndUpdate(id, {
+        status: "DONE",
+        modifiedAt: new Date()
+    }, { new: true });
+    if (!updatedTask) return res.status(404).json({ msg: "Task not found" });
     res.status(200).json({ msg: "Task marked as completed" });
 });
 
 //Función para eliminar una tarea
-app.delete("/tasks/:id?", (req, res) => {
+app.delete("/tasks/:id?", async (req, res) => {
     const { id } = req.params;
     if (!id) return res.status(400).json({ msg: "You missed parameter 'id'" });
-    const taskIndex = tasks.findIndex(task => task.id === id);
-    if (taskIndex === -1) return res.status(404).json({ msg: "Task not found" });
-    tasks.splice(taskIndex, 1);
-    tasks.forEach((task, index) => {
-        task.id = (index + 1).toString();
-    });
+    const task = await TaskModel.findByIdAndDelete(id);
+    if (!task) return res.status(404).json({ msg: "Task not found" });
     res.status(200).json({ msg: "Task removed successfully" });
 });
 
