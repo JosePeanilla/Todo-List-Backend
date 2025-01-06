@@ -34,13 +34,13 @@ describe("POST /tasks/", () => {
             .expect(400)
             .then((response) => {
                 expect(response.body.msg).toContain(
-                    "You missed parameter 'title'"
+                    "You missed some parameters: parameter1, parameter2, ..."
                 );
                 // Optionally, check for specific missing parameter names if your API provides them
             });
     });
 });
-/*
+
 describe("GET /tasks endpoint", () => {
     test("should return a 200 status code and a JSON array of incomplete tasks", async () => {
         await request(app)
@@ -52,7 +52,7 @@ describe("GET /tasks endpoint", () => {
                 expect(Array.isArray(response.body)).toBe(true);
 
                 response.body.forEach((task) => {
-                    expect(task).toHaveProperty("id");
+                    expect(task).toHaveProperty("_id");
                     expect(task).toHaveProperty("title");
                     expect(task).toHaveProperty("description");
                     expect(task).toHaveProperty("status");
@@ -76,7 +76,7 @@ describe("GET /tasks/:id endpoint", () => {
             .expect(200);
 
         // Validate structure of the task object (based on the fields you expect to be present)
-        expect(response.body).toHaveProperty("id", validTaskId);
+        expect(response.body).toHaveProperty("_id", validTaskId);
         expect(response.body).toHaveProperty("title");
         expect(response.body).toHaveProperty("description");
         // Add more checks as necessary
@@ -139,7 +139,7 @@ describe("PUT /tasks/:id endpoint", () => {
             .expect(400)
             .then((response) => {
                 expect(response.body.msg).toContain(
-                    "You missed parameters: 'id' or 'title'"
+                    "You missed some parameters: parameter1, parameter2, ..."
                 );
             });
     });
@@ -337,7 +337,7 @@ describe("POST /user/login", () => {
             });
     });
 });
-*/
+
 afterAll((done) => {
     server.close(done);
 });

@@ -1,4 +1,5 @@
 require("dotenv").config();
+const cors = require("cors");
 const express = require("express");
 const { default: mongoose } = require("mongoose");
 
@@ -9,6 +10,7 @@ const app = express();
 
 const port = 3000;
 
+app.use(cors());
 app.use(express.json());
 
 const dbConnectionStringCloud = process.env.DB_CONNECTION_STRING;

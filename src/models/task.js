@@ -7,11 +7,11 @@ const taskSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: true,
+        default: "",
     },
     dueDate: {
         type: Date,
-        required: true,
+        default: null,
     },
     status: {
         type: String,
@@ -20,7 +20,7 @@ const taskSchema = new mongoose.Schema({
     },
     user: {
         type: String,
-        required: true,
+        default: "Anonymous",
     },    
     createdAt: {
         type: Date,
