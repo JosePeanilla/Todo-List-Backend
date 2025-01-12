@@ -30,4 +30,10 @@ const server = app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
 
+app.use((req, res, next) => {
+    console.log(`Solicitud entrante: ${req.method} ${req.url}`);
+    console.log("Cuerpo de la solicitud:", req.body);
+    next();
+});
+
 module.exports = { app, server };

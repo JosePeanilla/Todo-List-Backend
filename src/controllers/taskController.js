@@ -38,27 +38,22 @@ const getTaskById = async (req,res) => {
 const createTask = async (req, res) => {
     const { title, description, status, dueDate, user } = req.body;
 
-    if (!title) return res.status(400).json({ msg: "El título es obligatorio." });
+    if (!title) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
 
     try {
         const newTask = new TaskModel({
             title,
             description: description || "",
             status: status || "TODO",
-            dueDate: dueDate || null,
-            user: user || null,
+            dueDate: dueDate ? new Date(dueDate) : null,
+            user: user || "Anonymous",
             createdAt: new Date(),
             modifiedAt: new Date(),
-            deletedAt: null,
         });
 
         await newTask.save();
 
-        res.status(201).json({
-            msg: "Task created",
-            id: newTask.id,
-            task: newTask, 
-        });
+        res.status(201).json({ msg: "Task created", task: newTask });
     } catch (error) {
         console.error("Error al crear la tarea:", error);
         res.status(500).json({ msg: "Error al crear la tarea." });
@@ -67,22 +62,40 @@ const createTask = async (req, res) => {
 
 const updateTask = async (req, res) => {
     const { id } = req.params;
+    const { title, description, dueDate, status, user } = req.body;
+    console.log("Datos recibidos en el backend para actualizar:", { title, description, dueDate, status, user });
+    if (!title) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ msg: "Invalid ID format" });
     }
-    const { title, description, dueDate, status, user } = req.body;
-    if (!title) return res.status(400).json({ msg: "You missed some parameters: parameter1, parameter2, ..." });
-    const updatedTask = await TaskModel.findByIdAndUpdate(id, {
-        title,
-        description,
-        dueDate,
-        status,
-        user,
-        modifiedAt: new Date()
-    }, { new: true });
-    if (!updatedTask) return res.status(404).json({ msg: "Task not found" });
-    res.status(200).json({ msg: "Task updated" });
-}
+
+    try {
+        const existingTask = await TaskModel.findById(id);
+        console.log("Tarea antes de actualizar:", existingTask);
+
+        const updatedTask = await TaskModel.findByIdAndUpdate(
+            id,
+            {
+                title,
+                description: description !== undefined ? description : "",
+                dueDate: dueDate ? new Date(dueDate) : null,
+                status,
+                user,
+                modifiedAt: new Date(),
+            },
+            { new: true }
+        );
+        console.log("Tarea después de actualizar:", updatedTask);
+
+        if (!updatedTask) return res.status(404).json({ msg: "Task not found" });
+
+        res.status(200).json({ msg: "Task updated", task: updatedTask });
+    } catch (error) {
+        console.error("Error al actualizar la tarea:", error);
+        res.status(500).json({ msg: "Error al actualizar la tarea." });
+    }
+};
 
 const completeTask = async (req, res) => {
     const { id } = req.params;
